@@ -7,8 +7,9 @@
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
 
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
+[//]: # ([![Stargazers][stars-shield]][stars-url])
+
+[//]: # ([![Issues][issues-shield]][issues-url])
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
@@ -18,13 +19,13 @@
 <br />
 <div align="center">
   <a href="https://github.com/MoatazElSakkar/ytidm-downloads-organizer">
-    <img src="https://github.com/MoatazElSakkar/ytidm-downloads-organizer/idm-yt-icon.png" alt="Logo" width="128" height="128">
+    <img src="https://github.com/MoatazElSakkar/ytidm-downloads-organizer/blob/master/idm-yt-icon.png?raw=true" alt="Logo" width="128" height="128">
   </a>
 
 <h3 align="center">Yt IDM video library organizer</h3>
 
   <p align="center">
-    Automaticall sort your idm downloaded videos
+    Automatically sort your idm downloaded videos
     <br />
     <a href="https://github.com/MoatazElSakkar/ytidm-downloads-organizer"><strong>Explore the docs »</strong></a>
     <br />
@@ -129,7 +130,7 @@ Project Link: [https://github.com/MoatazElSakkar/ytidm-downloads-organizer.git](
 [license-shield]: https://img.shields.io/github/license/othneildrew/Best-README-Template.svg?style=for-the-badge
 [license-url]: https://github.com/MoatazElSakkar/ytidm-downloads-organizer/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/othneildrew
+[linkedin-url]: https://linkedin.com/in/MoatazElSakkar
 [product-screenshot]: images/screenshot.png
 [Next.js]: https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white
 [Next-url]: https://nextjs.org/

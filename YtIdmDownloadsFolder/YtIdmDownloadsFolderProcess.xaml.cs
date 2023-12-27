@@ -36,7 +36,7 @@ namespace YtIdmDownloadsFolder
 
         }
 
-        private async void OrganizerTimerOnElapsed(object sender, ElapsedEventArgs eventArgs)
+        private void OrganizerTimerOnElapsed(object sender, ElapsedEventArgs eventArgs)
         {
             organizerTimer.Enabled = false;
             try
@@ -92,13 +92,21 @@ namespace YtIdmDownloadsFolder
             try{
                 for (; pollIndexOffset < pollMaxId; pollIndexOffset++)
                 {
+                    RegistryKey itemKey = Registry.CurrentUser.OpenSubKey(
+                        string.Format(@"SOFTWARE\DownloadManager\{0}", pollIndexOffset), false);
+                    if (itemKey!=null)
+                        continue;
+                    
                     YtVideoInfo ytVideoInfo =
-                        await AnalyzeYtVideoInfo(
-                            GetYtLink(Registry.CurrentUser.OpenSubKey(
-                                string.Format(@"SOFTWARE\DownloadManager\{0}", pollIndexOffset), false)));
+                        await AnalyzeYtVideoInfo(GetYtLink(itemKey));
+                    
                     //                 if (File.Exists(ytVideoInfo.title + ".mp4"))
+                    if (ytVideoInfo==null)
+                        continue;
+                    
                     if (fileInfoDictionry.ContainsKey(ytVideoInfo.title))
                         fileInfoDictionry[ytVideoInfo.title] = ytVideoInfo;
+                    
                     else
                         fileInfoDictionry.Add(ytVideoInfo.title, ytVideoInfo);
                 }
@@ -154,8 +162,8 @@ namespace YtIdmDownloadsFolder
 
         private string GetYtLink(RegistryKey openSubKey)
         {
-            string dlOwnerPage = openSubKey.GetValue("owWPage").ToString();
-            if (dlOwnerPage.StartsWith("https://www.youtube.com"))
+            string dlOwnerPage = openSubKey.GetValue("owWPage")?.ToString();
+            if (dlOwnerPage != null && dlOwnerPage.StartsWith("https://www.youtube.com"))
                 return dlOwnerPage;
 
             return null;
@@ -200,14 +208,21 @@ namespace YtIdmDownloadsFolder
         
         private void LogException(Exception ex)
         {
-            File.WriteAllLines(new DirectoryInfo(currentPath).Parent + "\\failure.log",
-                new[]
-                {
-                    DateTime.Now + "========================================================",
-                    ex.Message,
-                    ex.StackTrace,
-                    "====================================================================="
-                });
+            try
+            {
+                File.AppendAllLines(new DirectoryInfo(currentPath).Parent?.Parent + "\\failure.log",
+                    new[]
+                    {
+                        DateTime.Now + "========================================================",
+                        ex.Message,
+                        ex.StackTrace,
+                        "=====================================================================\n"
+                    });
+            }
+            catch (Exception exi)
+            {
+                MessageBox.Show(exi.Message);
+            }
         }
     }
 

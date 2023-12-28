@@ -22,9 +22,9 @@ namespace YtIdmDownloadsFolder
     {
         private Timer regPollTimer;
         private Timer organizerTimer;
-        private RegistryKey IdmKey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\DownloadManager",false);
+        private RegistryKey IdmKey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\DownloadManager", false);
         private const string ytVideoEmbedUrl = @"https://noembed.com/embed?url={0}";
-        private long pollIndexOffset=1;
+        private long pollIndexOffset = 1;
         FileSystemWatcher fileSystemWatcher = new FileSystemWatcher();
         private Dictionary<string, YtVideoInfo> fileInfoDictionry = new Dictionary<string, YtVideoInfo>();
         private List<FileSystemEventArgs> filesDownloadEvents = new List<FileSystemEventArgs>();
@@ -33,20 +33,19 @@ namespace YtIdmDownloadsFolder
         public YtIdmDownloadsFolderProcess()
         {
             InitializeComponent();
-
         }
 
         private void OrganizerTimerOnElapsed(object sender, ElapsedEventArgs eventArgs)
         {
             organizerTimer.Enabled = false;
-            try
-            {
-                for (int i = 0; i < filesDownloadEvents.Count; i++)
-                {
-                    FileSystemEventArgs e = filesDownloadEvents[i];
 
-                    string key = fileInfoDictionry.Keys.FirstOrDefault(x =>
-                        e.Name.RemoveSpecialCharacters().Contains(x.RemoveSpecialCharacters()));
+            for (int i = 0; i < filesDownloadEvents.Count; i++)
+            {
+                FileSystemEventArgs e = filesDownloadEvents[i];
+                string key = fileInfoDictionry.Keys.FirstOrDefault(x =>
+                    e.Name.RemoveSpecialCharacters().Contains(x.RemoveSpecialCharacters()));
+                try
+                {
                     if (key != null)
                     {
                         if (!Directory.Exists(fileSystemWatcher.Path + "\\" + fileInfoDictionry[key].author_name))
@@ -64,19 +63,20 @@ namespace YtIdmDownloadsFolder
                                                                          .ValidateFileName() + ".mp4");
                         shellFile.Properties.System.Comment.Value = fileInfoDictionry[key].url;
                         shellFile.Properties.System.Author.Value = new[] { fileInfoDictionry[key].author_name };
-                        filesDownloadEvents.Remove(filesDownloadEvents[i]);
                         fileInfoDictionry.Remove(key);
+                        filesDownloadEvents.Remove(filesDownloadEvents[i]);
                     }
                 }
+                catch (Exception ex)
+                {
+                    LogException(ex);
+                }
             }
-            catch(Exception ex)
-            {
-                LogException(ex);
-            }
+
 
             organizerTimer.Enabled = true;
         }
-        
+
         private void FileSystemWatcherOnChanged(object sender, FileSystemEventArgs e)
         {
             FileSystemWatcherOnCreated(sender, e);
@@ -84,34 +84,39 @@ namespace YtIdmDownloadsFolder
 
         private async void RegPollTimerOnElapsed(object sender, ElapsedEventArgs e)
         {
-            
-            if (!GetIdmMaxId(out var pollMaxId)) 
+            if (!GetIdmMaxId(out var pollMaxId))
                 return;
 
             regPollTimer.Enabled = false;
-            try{
+            
+            try
+            {
                 for (; pollIndexOffset < pollMaxId; pollIndexOffset++)
                 {
                     RegistryKey itemKey = Registry.CurrentUser.OpenSubKey(
                         string.Format(@"SOFTWARE\DownloadManager\{0}", pollIndexOffset), false);
-                    if (itemKey!=null)
-                        continue;
                     
+                    string ytLink = GetYtLink(itemKey);
+
+                    if (ytLink == null)
+                        continue;
+
                     YtVideoInfo ytVideoInfo =
-                        await AnalyzeYtVideoInfo(GetYtLink(itemKey));
-                    
-                    //                 if (File.Exists(ytVideoInfo.title + ".mp4"))
-                    if (ytVideoInfo==null)
-                        continue;
-                    
+                        await AnalyzeYtVideoInfo(ytLink);
+
+                    if (ytVideoInfo == null)
+                        break;
+
+                    // if (File.Exists(ytVideoInfo.title + ".mp4"))
+
                     if (fileInfoDictionry.ContainsKey(ytVideoInfo.title))
                         fileInfoDictionry[ytVideoInfo.title] = ytVideoInfo;
-                    
+
                     else
                         fileInfoDictionry.Add(ytVideoInfo.title, ytVideoInfo);
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 LogException(ex);
             }
@@ -126,7 +131,7 @@ namespace YtIdmDownloadsFolder
 
         private static bool GetIdmMaxId(out long pollMaxId)
         {
-            pollMaxId=long.MaxValue;
+            pollMaxId = long.MaxValue;
 
             try
             {
@@ -141,15 +146,15 @@ namespace YtIdmDownloadsFolder
                 Application.Current.Shutdown();
                 return false;
             }
-
         }
 
         private async Task<YtVideoInfo> AnalyzeYtVideoInfo(string ytLink)
         {
             if (ytLink == null)
                 return null;
-            
-            HttpWebRequest videoInfoWebRequest = (HttpWebRequest)WebRequest.Create(string.Format(ytVideoEmbedUrl,ytLink));
+
+            HttpWebRequest videoInfoWebRequest =
+                (HttpWebRequest)WebRequest.Create(string.Format(ytVideoEmbedUrl, ytLink));
             videoInfoWebRequest.Method = "GET";
             WebResponse userinfoResponse = await videoInfoWebRequest.GetResponseAsync();
             using (StreamReader videoInfoResponseStream = new StreamReader(userinfoResponse.GetResponseStream()))
@@ -176,7 +181,7 @@ namespace YtIdmDownloadsFolder
                 Interval = 30000,
                 Enabled = true,
                 AutoReset = true
-            };            
+            };
             organizerTimer = new Timer()
             {
                 Interval = 90000,
@@ -185,32 +190,34 @@ namespace YtIdmDownloadsFolder
             };
             GetIdmMaxId(out pollIndexOffset);
             regPollTimer.Elapsed += RegPollTimerOnElapsed;
-            organizerTimer.Elapsed+=OrganizerTimerOnElapsed;
+            organizerTimer.Elapsed += OrganizerTimerOnElapsed;
             // if (File.Exists("presistent-poll-index-offset.dat"))
             //     long.TryParse(File.ReadAllText("presistent-poll-index-offset.dat"), out pollIndexOffset);
             fileSystemWatcher = new FileSystemWatcher();
-            
+
             //The application should be in a folder in the youtube video folder
             fileSystemWatcher.Path = new DirectoryInfo(currentPath).Parent.Parent.FullName;
-            
+
             fileSystemWatcher.Filter = "*.*";
             fileSystemWatcher.NotifyFilter = NotifyFilters.LastWrite;
             fileSystemWatcher.EnableRaisingEvents = true;
             fileSystemWatcher.Created += FileSystemWatcherOnCreated;
-            fileSystemWatcher.Changed+= FileSystemWatcherOnChanged;
-            
+            fileSystemWatcher.Changed += FileSystemWatcherOnChanged;
+
             //Performing some p/invoke magic to hide from alt/win tab
             WindowInteropHelper wndHelper = new WindowInteropHelper(this);
-            int exStyle = (int)NativeMethods.GetWindowLong(wndHelper.Handle, (int)NativeMethods.GetWindowLongFields.GWL_EXSTYLE);
+            int exStyle =
+                (int)NativeMethods.GetWindowLong(wndHelper.Handle, (int)NativeMethods.GetWindowLongFields.GWL_EXSTYLE);
             exStyle |= (int)NativeMethods.ExtendedWindowStyles.WS_EX_TOOLWINDOW;
-            NativeMethods.SetWindowLong(wndHelper.Handle, (int)NativeMethods.GetWindowLongFields.GWL_EXSTYLE, (IntPtr)exStyle);
+            NativeMethods.SetWindowLong(wndHelper.Handle, (int)NativeMethods.GetWindowLongFields.GWL_EXSTYLE,
+                (IntPtr)exStyle);
         }
-        
+
         private void LogException(Exception ex)
         {
             try
             {
-                File.AppendAllLines(new DirectoryInfo(currentPath).Parent?.Parent + "\\failure.log",
+                File.AppendAllLines("failure.log",
                     new[]
                     {
                         DateTime.Now + "========================================================",
@@ -225,5 +232,4 @@ namespace YtIdmDownloadsFolder
             }
         }
     }
-
 }

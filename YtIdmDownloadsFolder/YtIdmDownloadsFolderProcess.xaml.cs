@@ -37,7 +37,6 @@ namespace YtIdmDownloadsFolder
 
         private void OrganizerTimerOnElapsed(object sender, ElapsedEventArgs eventArgs)
         {
-            //organizerTimer.Enabled = false;
             FileSystemEventArgs e;
 
             for (int i = 0; i < filesDownloadEvents.Count; i++)
@@ -74,8 +73,6 @@ namespace YtIdmDownloadsFolder
                 }
             }
 
-
-            //organizerTimer.Enabled = true;
         }
 
         private void FileSystemWatcherOnChanged(object sender, FileSystemEventArgs e)
@@ -87,9 +84,7 @@ namespace YtIdmDownloadsFolder
         {
             if (!GetIdmMaxId(out var pollMaxId))
                 return;
-
-            //regPollTimer.Enabled = false;
-
+            
 
             for (; pollIndexOffset < pollMaxId; pollIndexOffset++)
             {
@@ -114,9 +109,7 @@ namespace YtIdmDownloadsFolder
                         LogException(new Exception("Embedding not allowed"), ytLink);
                         continue;
                     }
-
-                    // if (File.Exists(ytVideoInfo.title + ".mp4"))
-
+                    
                     if (fileInfoDictionry.ContainsKey(ytVideoInfo.title))
                         fileInfoDictionry[ytVideoInfo.title] = ytVideoInfo;
 
@@ -130,7 +123,6 @@ namespace YtIdmDownloadsFolder
             }
 
 
-            //regPollTimer.Enabled = true;
         }
 
         private void FileSystemWatcherOnCreated(object sender, FileSystemEventArgs e)

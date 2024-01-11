@@ -37,11 +37,12 @@ namespace YtIdmDownloadsFolder
 
         private void OrganizerTimerOnElapsed(object sender, ElapsedEventArgs eventArgs)
         {
-            organizerTimer.Enabled = false;
+            //organizerTimer.Enabled = false;
+            FileSystemEventArgs e;
 
             for (int i = 0; i < filesDownloadEvents.Count; i++)
             {
-                FileSystemEventArgs e = filesDownloadEvents[i];
+                e = filesDownloadEvents[i];
                 string key = fileInfoDictionry.Keys.FirstOrDefault(x =>
                     e.Name.RemoveSpecialCharacters().Contains(x.RemoveSpecialCharacters()));
                 try
@@ -69,12 +70,12 @@ namespace YtIdmDownloadsFolder
                 }
                 catch (Exception ex)
                 {
-                    LogException(ex);
+                    LogException(ex, e.Name);
                 }
             }
 
 
-            organizerTimer.Enabled = true;
+            //organizerTimer.Enabled = true;
         }
 
         private void FileSystemWatcherOnChanged(object sender, FileSystemEventArgs e)
@@ -87,15 +88,16 @@ namespace YtIdmDownloadsFolder
             if (!GetIdmMaxId(out var pollMaxId))
                 return;
 
-            regPollTimer.Enabled = false;
-            
-            try
+            //regPollTimer.Enabled = false;
+
+
+            for (; pollIndexOffset < pollMaxId; pollIndexOffset++)
             {
-                for (; pollIndexOffset < pollMaxId; pollIndexOffset++)
+                try
                 {
                     RegistryKey itemKey = Registry.CurrentUser.OpenSubKey(
                         string.Format(@"SOFTWARE\DownloadManager\{0}", pollIndexOffset), false);
-                    
+
                     string ytLink = GetYtLink(itemKey);
 
                     if (ytLink == null)
@@ -107,6 +109,12 @@ namespace YtIdmDownloadsFolder
                     if (ytVideoInfo == null)
                         break;
 
+                    if (ytVideoInfo.title == null)
+                    {
+                        LogException(new Exception("Embedding not allowed"), ytLink);
+                        continue;
+                    }
+
                     // if (File.Exists(ytVideoInfo.title + ".mp4"))
 
                     if (fileInfoDictionry.ContainsKey(ytVideoInfo.title))
@@ -115,13 +123,14 @@ namespace YtIdmDownloadsFolder
                     else
                         fileInfoDictionry.Add(ytVideoInfo.title, ytVideoInfo);
                 }
-            }
-            catch (Exception ex)
-            {
-                LogException(ex);
+                catch (Exception ex)
+                {
+                    LogException(ex, string.Format(@"SOFTWARE\DownloadManager\{0}", pollIndexOffset));
+                }
             }
 
-            regPollTimer.Enabled = true;
+
+            //regPollTimer.Enabled = true;
         }
 
         private void FileSystemWatcherOnCreated(object sender, FileSystemEventArgs e)
@@ -167,6 +176,9 @@ namespace YtIdmDownloadsFolder
 
         private string GetYtLink(RegistryKey openSubKey)
         {
+            if (openSubKey == null)
+                return null;
+
             string dlOwnerPage = openSubKey.GetValue("owWPage")?.ToString();
             if (dlOwnerPage != null && dlOwnerPage.StartsWith("https://www.youtube.com"))
                 return dlOwnerPage;
@@ -213,16 +225,17 @@ namespace YtIdmDownloadsFolder
                 (IntPtr)exStyle);
         }
 
-        private void LogException(Exception ex)
+        private void LogException(Exception ex, string item)
         {
             try
             {
                 File.AppendAllLines("failure.log",
                     new[]
                     {
-                        DateTime.Now + "========================================================",
+                        DateTime.Now + "====================================",
                         ex.Message,
                         ex.StackTrace,
+                        "Failed to process " + item,
                         "=====================================================================\n"
                     });
             }

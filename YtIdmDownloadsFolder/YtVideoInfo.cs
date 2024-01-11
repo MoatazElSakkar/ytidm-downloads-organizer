@@ -16,5 +16,6 @@
         public string type { get; set; }
         public string provider_url { get; set; }
         public string html { get; set; }
+        public string error { get; set; }
     }
 }
